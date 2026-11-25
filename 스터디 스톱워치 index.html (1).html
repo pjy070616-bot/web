@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Stopwatch</title>
+  <style>
+    :root {
+      --bg-color: #fff0f5;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --primary-pink: #ff6f91;
+      --primary-hover: #ff527b;
+      --soft-pink: #f8bbd0;
+      --accent-pink: #ff8da1;
+      --dark-pink: #880e4f;
+      --text-main: #4a2c35;
+      --text-sub: #8c626d;
+      --btn-bg: #ffe4e9;
+      --shadow: 0 12px 30px rgba(255, 111, 145, 0.15);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ffeef2 0%, #ffd6e0 50%, #fedfe7 100%);
+      color: var(--text-main);
+      padding: 16px;
+      transition: background 0.3s ease;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 7번 조건: 시간 종료 시 빨간색 깜빡임 효과 */
+    body.time-up {
+      animation: alertBlink 0.8s infinite alternate;
+    }
+
+    @keyframes alertBlink {
+      0% {
+        background: #ff4d4d;
+      }
+      100% {
+        background: #ffeef2;
+      }
+    }
+
+    /* 8번 조건: 좌측 상단 실시간 시계 */
+    .top-bar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      padding: 8px 16px;
+      border-radius: 50px;
+      box-shadow: 0 4px 15px rgba(255, 111, 145, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .top-bar .clock-icon {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--primary-pink);
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .top-bar .clock-icon::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      width: 2px;
+      height: 4px;
+      background: var(--primary-pink);
+      border-radius: 1px;
+    }
+
+    .clock-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--dark-pink);
+      letter-spacing: 0.5px;
+    }
+
+    /* 메인 컨테이너 */
+    .app-container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      margin-top: 40px;
+    }
+
+    .title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--dark-pink);
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* 1번 조건: 시간 설정 영역 */
+    .settings-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-radius: 14px;
+      padding: 6px 12px;
+      border: 1.5px solid var(--soft-pink);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+      transition: border-color 0.2s;
+    }
+
+    .input-group:focus-within {
+      border-color: var(--primary-pink);
+    }
+
+    .input-group input {
+      width: 54px;
+      border: none;
+      outline: none;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-main);
+      background: transparent;
+    }
+
+    .input-group input::-webkit-outer-spin-button,
+    .input-group input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .input-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-left: 2px;
+    }
+
+    /* 프리셋 퀵 버튼 */
+    .preset-chips {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-chip {
+      background: #fff;
+      border: 1px solid var(--soft-pink);
+      color: var(--dark-pink);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-chip:hover {
+      background: var(--btn-bg);
+      border-color: var(--primary-pink);
+    }
+
+    /* 2번 조건: 중앙 타이머 표시 */
+    .timer-display-wrapper {
+      position: relative;
+      width: 100%;
+      background: radial-gradient(circle, rgba(255, 238, 243, 0.9) 0%, rgba(255, 222, 230, 0.5) 100%);
+      border-radius: 20px;
+      padding: 32px 16px;
+      margin-bottom: 28px;
+      text-align: center;
+      border: 1px solid rgba(255, 111, 145, 0.15);
+      box-shadow: inset 0 2px 8px rgba(255, 111, 145, 0.08);
+    }
+
+    .timer-display {
+      font-size: 4.8rem;
+      font-weight: 800;
+      color: var(--dark-pink);
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-shadow: 0 4px 12px rgba(255, 111, 145, 0.2);
+    }
+
+    .status-text {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      letter-spacing: 1px;
+    }
+
+    /* 3번 조건: 조작 버튼 그룹 */
+    .controls {
+      width: 100%;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      flex: 1;
+      min-height: 52px;
+      border: none;
+      outline: none;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--primary-pink) 0%, var(--accent-pink) 100%);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(255, 111, 145, 0.35);
+    }
+
+    .btn-start:hover {
+      background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-pink) 100%);
+    }
+
+    .btn-pause {
+      background: #fff;
+      color: var(--dark-pink);
+      border: 1.5px solid var(--soft-pink);
+    }
+
+    .btn-pause:hover {
+      background: var(--btn-bg);
+      border-color: var(--primary-pink);
+    }
+
+    .btn-reset {
+      background: #fff;
+      color: var(--text-sub);
+      border: 1.5px solid #eee;
+    }
+
+    .btn-reset:hover {
+      background: #fdf2f4;
+      color: var(--dark-pink);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* 모바일 반응형 조정 */
+    @media (max-width: 480px) {
+      .app-container {
+        padding: 28px 18px;
+      }
+      .timer-display {
+        font-size: 3.8rem;
+      }
+      .top-bar {
+        top: 14px;
+        left: 14px;
+        padding: 6px 12px;
+      }
+      .clock-text {
+        font-size: 0.8rem;
+      }
+      .btn {
+        min-height: 48px;
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 8번: 좌측 상단 실시간 시계 -->
+  <div class="top-bar">
+    <div class="clock-icon"></div>
+    <span class="clock-text" id="liveClock">00:00:00</span>
+  </div>
+
+  <main class="app-container">
+    <h1 class="title">Study Timer</h1>
+
+    <!-- 1번: 타이머 시간 설정 -->
+    <!-- 1번: 타이머 시간 직접 설정 -->
+    <section class="settings-section" id="settingsSection">
+      <div style="text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 2px;">
+        원하는 시간을 직접 입력하세요
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <input type="number" id="inputMinutes" min="0" max="999" value="25" placeholder="분" aria-label="설정 분" />
+          <label for="inputMinutes">분</label>
+        </div>
+        <span style="font-weight: 700; color: var(--soft-pink); font-size: 1.2rem;">:</span>
+        <div class="input-group">
+          <input type="number" id="inputSeconds" min="0" max="59" value="0" placeholder="초" aria-label="설정 초" />
+          <label for="inputSeconds">초</label>
+        </div>
+      </div>
+
+      <!-- 간편 설정 프리셋 버튼 -->
+      <div class="preset-chips">
+        <button type="button" class="preset-chip" onclick="applyPreset(10, 0)">10분</button>
+        <button type="button" class="preset-chip" onclick="applyPreset(25, 0)">25분(뽀모도로)</button>
+        <button type="button" class="preset-chip" onclick="applyPreset(50, 0)">50분</button>
+      </div>
+    </section>
+
+    <!-- 2번: 화면 중앙 남은 시간 표시 -->
+    <section class="timer-display-wrapper">
+      <div class="timer-display" id="timeDisplay">25:00</div>
+      <div class="status-text" id="statusText">READY TO STUDY</div>
+    </section>
+
+    <!-- 3번: 시작, 일시정지, 초기화 버튼 -->
+    <div class="controls">
+      <button class="btn btn-start" id="startBtn" onclick="startTimer()">시작</button>
+      <button class="btn btn-pause" id="pauseBtn" onclick="pauseTimer()" disabled>일시정지</button>
+      <button class="btn btn-reset" id="resetBtn" onclick="resetTimer()">초기화</button>
+    </div>
+  </main>
+
+  <script>
+    // 타이머 상태 관리 변수
+    let initialTotalSeconds = 25 * 60; // 처음 설정한 시간 (초)
+    let remainingSeconds = initialTotalSeconds; // 현재 남은 시간 (초)
+    let timerInterval = null;
+    let isRunning = false;
+
+    // DOM 요소
+    const inputMinutes = document.getElementById("inputMinutes");
+    const inputSeconds = document.getElementById("inputSeconds");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const statusText = document.getElementById("statusText");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const liveClock = document.getElementById("liveClock");
+
+    // 8번: 실시간 시계 업데이트 (1초마다)
+    function updateLiveClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const seconds = String(now.getSeconds()).padStart(2, "0");
+      liveClock.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // 숫자를 2자리 포맷(MM:SS)으로 변환
+    function formatTime(totalSec) {
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    // 디스플레이 갱신
+    function renderDisplay() {
+      timeDisplay.textContent = formatTime(remainingSeconds);
+    }
+
+    // 입력값으로부터 설정 시간 반영
+    // 입력값으로부터 설정 시간 반영 (타이핑 중 자연스럽게 반영)
+    function readSettingsFromInputs() {
+      let mins = parseInt(inputMinutes.value, 10);
+      let secs = parseInt(inputSeconds.value, 10);
+
+      if (isNaN(mins) || mins < 0) mins = 0;
+      if (isNaN(secs) || secs < 0) secs = 0;
+      if (secs > 59) secs = 59;
+
+      initialTotalSeconds = mins * 60 + secs;
+      remainingSeconds = initialTotalSeconds;
+      renderDisplay();
+    }
+
+    // 직접 입력 이벤트 리스너
+    inputMinutes.addEventListener("input", () => {
+      if (!isRunning) readSettingsFromInputs();
+    });
+    inputSeconds.addEventListener("input", () => {
+      if (!isRunning) readSettingsFromInputs();
+    });
+
+    // 입력 필드 포커스 아웃 시 빈 값 또는 범위 초과 정리
+    inputMinutes.addEventListener("change", () => {
+      let mins = parseInt(inputMinutes.value, 10);
+      inputMinutes.value = isNaN(mins) || mins < 0 ? 0 : mins;
+      if (!isRunning) readSettingsFromInputs();
+    });
+    inputSeconds.addEventListener("change", () => {
+      let secs = parseInt(inputSeconds.value, 10);
+      if (isNaN(secs) || secs < 0) secs = 0;
+      if (secs > 59) secs = 59;
+      inputSeconds.value = secs;
+      if (!isRunning) readSettingsFromInputs();
+    });
+    // 프리셋 버튼 적용
+    function applyPreset(mins, secs) {
+      if (isRunning) pauseTimer();
+      inputMinutes.value = mins;
+      inputSeconds.value = secs;
+      readSettingsFromInputs();
+      stopAlert();
+      statusText.textContent = "READY TO STUDY";
+    }
+
+    // 4번: 시작 버튼 로직
+    function startTimer() {
+      if (remainingSeconds <= 0) {
+        readSettingsFromInputs();
+        if (remainingSeconds <= 0) {
+          alert("시간을 1초 이상 설정해 주세요.");
+          return;
+        }
+      }
+
+      stopAlert(); // 깜빡임 중이었다면 중지
+      isRunning = true;
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      inputMinutes.disabled = true;
+      inputSeconds.disabled = true;
+      statusText.textContent = "FOCUSING...";
+
+      // 1초마다 남은 시간 감소
+      timerInterval = setInterval(() => {
+        if (remainingSeconds > 0) {
+          remainingSeconds--;
+          renderDisplay();
+
+          // 7번: 시간이 0이 되었을 때
+          if (remainingSeconds === 0) {
+            triggerTimeUp();
+          }
+        }
+      }, 1000);
+    }
+
+    // 5번: 일시정지 버튼 로직
+    function pauseTimer() {
+      if (!isRunning) return;
+      clearInterval(timerInterval);
+      isRunning = false;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      statusText.textContent = "PAUSED";
+    }
+
+    // 6번: 초기화 버튼 로직
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      stopAlert();
+
+      // 처음 설정했던 시간으로 복구
+      remainingSeconds = initialTotalSeconds;
+      renderDisplay();
+
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      inputMinutes.disabled = false;
+      inputSeconds.disabled = false;
+      statusText.textContent = "RESET COMPLETED";
+    }
+
+    // 7번: 0초 도달 시 빨간색 깜빡임 경고 발생
+    function triggerTimeUp() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      inputMinutes.disabled = false;
+      inputSeconds.disabled = false;
+      statusText.textContent = "TIME OVER!";
+
+      // 화면 깜빡임 클래스 추가
+      document.body.classList.add("time-up");
+
+      // Web Audio API로 알람 비프음 재생 (외부 파일 없이 동작)
+      playBeepSound();
+    }
+
+    // 깜빡임 해제
+    function stopAlert() {
+      document.body.classList.remove("time-up");
+    }
+
+    // 간단한 Web Audio API 알람음
+    function playBeepSound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        for (let i = 0; i < 3; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, ctx.currentTime + i * 0.25); // A5 음
+          gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.25);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.25 + 0.2);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(ctx.currentTime + i * 0.25);
+          osc.stop(ctx.currentTime + i * 0.25 + 0.2);
+        }
+      } catch (e) {
+        console.log("Audio not supported or blocked");
+      }
+    }
+
+    // 초기 표시
+    readSettingsFromInputs();
+  </script>
+</body>
+</html>
